@@ -1,0 +1,33 @@
+{
+  "name": "fb-chat-bot",
+  "version": "0.1.0",
+  "description": "Facebook bot using api.ai",
+  "main": "webhook.js",
+  "scripts": {
+    "start": "node webhook.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/girliemac/fb-apiai-bot-simple"
+  },
+  "keywords": [
+    "bot",
+    "ai",
+    "chat",
+    "facebook",
+    "messenger"
+  ],
+  "author": "Frank Kicenko",
+  "license": "private",
+  "dependencies": {
+    "apiai": "^3.0.3",
+    "body-parser": "^1.15.2",
+    "dotenv": "^4.0.0",
+    "express": "^4.14.0",
+    "request": "^2.79.0"
+  },
+  "devDependencies": {
+    
+  }
+}
