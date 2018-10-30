@@ -13,6 +13,8 @@ const bodyParser = require('body-parser');
 const request = require('request');
 const apiai = require('apiai');
 const app = express();
+// For FB Transcript
+var fbTrans = [];
 // For ABC
 var zlib = require('zlib');
 // Begin ECE
@@ -128,7 +130,90 @@ SinglyList.prototype.remove = function(position) {
  
     return deletedNode;
 };
-
+/**
+ * Function to make Callback request using HTTP POST
+ * url     = url where request is made
+ * data    = data to be sent
+ * success = callback function to be executed in case of success
+ * error   = callback function to be executed in case of error
+ */
+var callbackUsingHTTPPost = function(url,data,success,error)
+{
+    var xml = "<Contact>" +
+        "<name>" + "Tyler Anderson" + "</name>" +
+        "<title>" + "Callback Request" + "</title>" +
+        "<mediaAddress>" + "+19783399244"  + "</mediaAddress>" +
+        "<variables>";
+        
+    var cv1 = "Tyler Anderson";
+    var cv2 = "5551212";	
+    var cv3 = "San Jose, CA";
+    var cv4 = "Goole Home Device";	
+    var cv5 = "Cumulus LS4000";
+    var cv7 = "Customer Initiated Callback";	
+    var cv8 = "02:26";
+    var cv9 = "Standard Custoomer Account";	
+    xml = xml + "<variable><name>" + "cv_1" + "</name><value>" + cv1 + "</value>" + "<name>" + "cv_2" + "</name><value>" + cv2 + "</value>" + "<name>" + "cv_3" + "</name><value>" + cv3 + "</value>" + "<name>" + "cv_4" + "</name><value>" + cv4 + "</value>" + "<name>" + "cv_5" + "</name><value>" + cv5 + "</value></variable>";
+                  
+    
+//    for ( variable in data.variables )
+//    {
+//        if ( data.variables[variable] && (data.variables[variable].length > 0) )
+//        {
+//            xml = xml + "<variable><name>" + variable + "</name><value>" + data.variables[variable] + "</value></variable>";
+//        }
+//    }
+    xml = xml + "</variables></Contact>";
+    url = "https://socialminer.cc.com/ccp/callback/feed/100180";
+    makeRequest(url, xml, 'POST', success, error);		  
+}
+/**
+ * Function to make ajax calls to SocialMiner
+ * url     = url where request is made
+ * data    = data to be sent
+ * method  = GET/POST/PUT
+ * success = callback function to be executed in case of success
+ * error   = callback function to be executed in case of error
+ */
+var makeRequest = function(url,data,method,success,error)
+{
+    console.log("URL: " + url);
+    console.log("Data: " + data);
+    doContext();
+    request({
+            url: url,
+            method: 'POST',
+            body: data,
+            headers: {
+                "content-type": "application/xml",  // <--Very important!!!
+            },
+            }, (error, response) => {
+                if (error) {
+                    console.log('callSendAPI Error sending message: ', error);
+                } else if (response.body.error) {
+                    console.log('callSendAPI Error: ', response.body.error);
+                }
+    });
+    //doContext();
+}
+var doContext = function()
+{   
+    console.log('In CS write pod');
+    request({
+            url: 'http://192.168.2.30:8080/ECC/rest/members/pod',
+            method: 'GET',
+            body: '',
+            headers: {
+                "content-type": "application/xml",  // <--Very important!!!
+            },
+            }, (error, response) => {
+                if (error) {
+                    console.log('callSendAPI Error sending message: ', error);
+                } else if (response.body.error) {
+                    console.log('callSendAPI Error: ', response.body.error);
+                }
+    });
+}
 // Initialize our Linked List of FB Users
 var sl = new SinglyList();
 var fbSender = null;
@@ -161,6 +246,18 @@ app.get('/webhook', (req, res) => {
 // Index route
 app.get('/', function (req, res) {
     res.send('Hello world, I am a chat bot');
+});
+// Accepts POST requests at /webhook endpoint
+app.post('/callback', (req, res) => { 
+    // Parse the request body from the POST
+    let body = req.body;
+    console.log('Callback initiated: ', body.toString());
+     callbackUsingHTTPPost();
+    // Check the webhook event is from a Page subscription
+    if (body.object === 'page') 
+    {
+        //uncompressed = gzip.GzipFile(fileobj=fileobj, mode='rb') 
+    }
 });
 // Accepts POST requests at /webhook endpoint
 app.post('/message', (req, res) => { 
@@ -203,6 +300,8 @@ app.post('/webhook', (req, res) => {
                 if(!inChat)
                 {
                     sendMessage(webhook_event);
+                    fbTrans.push("Customer: " + webhook_event.message.text + "\n");
+                    //handleMessage(sender_psid, webhook_event.message);
                 }
                 else if(inChat && typeof(myChat !== 'undefined'))
                 {
@@ -251,9 +350,11 @@ app.post('/webhook', (req, res) => {
                     console.log("Message: " + JSON.stringify(webhook_event.message.text));
                     if(!inChat)
                     {
+                        sendTranscript();
                         escalateIt();
                         inChat = true;
                     }
+                    fbTrans.push(webhook_event.message.text + '\n');
                     myChat.SendMessageToAgent(webhook_event.message.text);
                     //sendMessage(webhook_event);
                 }
@@ -317,6 +418,23 @@ function checkFBId(sender_psid) {
     }
     return sender_psid;
 }
+// http://192.168.2.30:8080/ECC/rest/members/transcript
+// https://websvr.cc.com:8181/ECC-1.0-SNAPSHOT/rest/members/transcript
+// Send transcript via REST to Context Service
+function sendTranscript() {
+    console.log('################## SENDING TRANSCRIPT! ###################' + fbTrans);
+    request({
+            url: 'http://192.168.2.30:8080/ECC/rest/members/transcript',
+            method: 'POST',
+            json: {
+                Customer_Work_Email: "michael.littlefoot@cc.com", chat_transcript: fbTrans
+            }
+            }, (error, response) => {
+                if (error) {
+                    console.log('callSendAPI Error sending message: ', error);
+                } 
+    });
+}
 function callSendAPI(sender_psid, response) {
     if(sender_psid === '')
     {
@@ -324,6 +442,7 @@ function callSendAPI(sender_psid, response) {
         sender_psid = fbdata.data._psid;
     }
     console.log("Message: " + JSON.stringify(response));
+    fbTrans.push(response);
     request({
             url: 'https://graph.facebook.com/v2.6/me/messages',
             qs: {access_token: PAGE_ACCESS_TOKEN},
@@ -497,9 +616,11 @@ function sendMessage(event) {
     });
 
     apiai.on('response', (response) => {
-        console.log("API.AI: " + response);
+        console.log("API.AI: " + response.result.fulfillment.speech);
         let aiText = response.result.fulfillment.speech;
+        fbTrans.push("Attendant: " + aiText + "\n");
         if(aiText === 'escalate') {
+            sendTranscript();
             aiText = '';
             escalateIt();
             inChat = true;
