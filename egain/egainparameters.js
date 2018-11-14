@@ -137,6 +137,7 @@ var start = function(shortcode) {
     request.open('GET', 'https://remobile.cc.com:8443/assistserver/shortcode/consumer?appkey=' + shortcode, true);
     request.send();
 }
+// Sending the Transcript for the interaction between customer and Bot
 function sendTranscript(tranScript) {
     var baseUrl = "https://websvr.cc.com:8181/ECC-1.0-SNAPSHOT/rest/members/transcript";
     $.ajax({

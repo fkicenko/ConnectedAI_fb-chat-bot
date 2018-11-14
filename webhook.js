@@ -20,7 +20,8 @@ var zlib = require('zlib');
 // Begin ECE
 var eGainLibrarySettings = require('./egain/egainNode').eGainLibrarySettings;
 var myLibrarySettings = new eGainLibrarySettings();
-myLibrarySettings.CORSHost = "https://eceweb.cc.com/system";
+// Add your ECE web server
+myLibrarySettings.CORSHost = "https://your ece web server/system";
 myLibrarySettings.IsDevelopmentModeOn = false;
 myLibrarySettings.eGainContextPath = "./";
 var inChat = false;
@@ -29,7 +30,8 @@ var file = "";
 /* passing in the settings you have just created. */
 var eGainLibrary = require('./egain/egainNode').eGainLibrary;
 var myLibrary = new eGainLibrary(myLibrarySettings);
-myLibrary.CORSHost = "https://eceweb.cc.com/system";
+// Add your ECE web server
+myLibrary.CORSHost = "https://your ece web server/system";
 /* Now create an instance of the Chat Object */
 var myChat = new myLibrary.Chat();
 /* Next get the event handlers for chat. It is mandatory to provide definition for the mandatory event handlers before initializing chat */
@@ -139,6 +141,7 @@ SinglyList.prototype.remove = function(position) {
  */
 var callbackUsingHTTPPost = function(url,data,success,error)
 {
+    // Hard coded Customer Information... Should gleen this from your authenication mechanisms
     var xml = "<Contact>" +
         "<name>" + "Tyler Anderson" + "</name>" +
         "<title>" + "Callback Request" + "</title>" +
